@@ -1,27 +1,44 @@
+
+const path = require('path');
 const express = require('express');
-const bodyParser = require('body-parser');
-const sequelize = require('./util/database'); // Sequelize setup
-
-const userRoutes = require('./routes/user');
-
 const app = express();
+require('dotenv').config();
 
-app.use(bodyParser.json());
-app.use(express.static('public'));
+const cors = require("cors");
+const sequelize = require ('./util/database');
 
-// Routes
+
+const Users = require ('./models/user');
+const Expense = require('./models/expense');
+const Order=require('./models/order')
+
+app.use(express.static(path.join(__dirname, 'public')));
+const userRoutes = require('./routes/user');
+const expenseRoutes = require('./routes/expense'); 
+const premiumRoutes = require('./routes/purchase');
+const LeaderBoardRoutes = require('./routes/premium');
+
+app.use(express.json());
+app.use(cors());
+
 app.use('/user', userRoutes);
+app.use('/expenses', expenseRoutes); 
+app.use('/premium', premiumRoutes);
+app.use('/premium', LeaderBoardRoutes);
 
-// Error handling for undefined routes
-app.use((req, res, next) => {
-    res.status(404).json({ message: "Page Not Found" });
+Users.hasMany(Expense, { foreignKey: 'userId' });
+Expense.belongsTo(Users, { foreignKey: 'userId' });
+
+
+Users.hasMany(Order,{foreignKey:'userId'});
+Order.belongsTo(Users,{foreignKey:"userId"})
+
+const port = 3000;
+sequelize
+.sync()
+.then((result) => {
+    console.log(`server is working on http://localhost:${port}`);
+   app.listen(port);
+}).catch((err) => {
+    console.log(err)
 });
-
-// Database sync and server start
-sequelize.sync()
-    .then(result => {
-        app.listen(4000, () => console.log("Server running on http://localhost:4000"));
-    })
-    .catch(err => {
-        console.error("Failed to sync database:", err);
-    });
